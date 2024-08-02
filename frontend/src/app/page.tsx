@@ -12,9 +12,9 @@ const api = axios.create({
 });
 const getWeather = async () => {
   const date = new Date();
-  date.setMinutes(date.getMinutes() - 30);
+  date.setMinutes(date.getMinutes() - 10);
   const base_date = date.getFullYear() + (date.getMonth() < 9 ? '0' : '') + (date.getMonth() + 1) + (date.getDate() < 9 ? '0' : '') + date.getDate();
-  const base_time = (date.getHours() < 9 ? '0' : '') + date.getHours() + '00';
+  const base_time = (date.getHours() < 9 ? '0' : '') + date.getHours() + (date.getMinutes() < 9 ? '0' : '') + (date.getMinutes() - date.getMinutes() % 10);
 
   const response = await axios.get(`http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=DEDxtLSKv9FP%2B2Th6HjclgFezo37jAJ0hTteg6OJNCKuWAfX7IXJ6YbEV2U23AOJ33%2BrnXl7gvgAST0eUn%2FKzw%3D%3D&base_date=${base_date}&base_time=${base_time}&nx=55&ny=127&dataType=JSON`)
   return response.data;
@@ -79,6 +79,22 @@ export default function Home() {
     };
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
+  }, [])
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const date = new Date();
+      if (date.getMinutes()%10 == 0 && date.getSeconds() == 0)
+        getWeather().then(r => {
+          if (r.response?.body?.items?.item)
+            for (let item of r.response.body.items.item) {
+              if (item.category == 'T1H') {
+                setWeahter(Number(item.obsrValue));
+                break;
+              }
+            }
+        }).catch(e => console.log(e));
+    }, 1000);
+    return () => clearInterval(interval);
   }, [])
   function setPage(page: number) {
     pageRef.current = page;
